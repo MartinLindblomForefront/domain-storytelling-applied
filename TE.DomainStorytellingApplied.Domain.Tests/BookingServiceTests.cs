@@ -9,9 +9,10 @@ public class BookingServiceTests
     private static readonly Booker Municipality = new("Kommunen", BookerType.Municipality);
 
     private readonly InMemoryBookingRepository _repository = new();
+    private readonly FakePaymentGateway _paymentGateway = new();
     private readonly Premises _premises = new(Id.Generate(), "Fotbollsplan", 300m, [Slot]);
 
-    private BookingService CreateService() => new(_repository);
+    private BookingService CreateService() => new(_repository, _paymentGateway);
 
     [Fact]
     public void GivenFreeTimeslot_WhenRequestingBooking_ShouldReserveTimeslot()
@@ -52,5 +53,47 @@ public class BookingServiceTests
         service.RequestBooking(PrivateBooker, _premises, Slot);
 
         Should.Throw<Exception>(() => service.RequestBooking(Municipality, _premises, Slot));
+    }
+
+    [Fact]
+    public void GivenSuccessfulPayment_WhenPayingForBooking_ShouldBeConfirmed()
+    {
+        var service = CreateService();
+        var booking = service.RequestBooking(PrivateBooker, _premises, Slot);
+
+        service.PayForBooking(booking.Id, _premises);
+
+        booking.Status.ShouldBe(BookingStatus.Confirmed);
+        _premises.IsReserved(Slot).ShouldBeTrue();
+        _paymentGateway.LastAmount.ShouldBe(_premises.Price);
+    }
+
+    [Fact]
+    public void GivenFailedPayment_WhenPayingForBooking_ShouldBeCancelledAndReleaseTimeslot()
+    {
+        var service = CreateService();
+        var booking = service.RequestBooking(PrivateBooker, _premises, Slot);
+        _paymentGateway.ResultToReturn = PaymentResult.Failure;
+
+        service.PayForBooking(booking.Id, _premises);
+
+        booking.Status.ShouldBe(BookingStatus.Cancelled);
+        _premises.IsReserved(Slot).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void GivenMunicipalityBooking_WhenPayingForBooking_ShouldThrowWithoutCallingGateway()
+    {
+        var service = CreateService();
+        var booking = service.RequestBooking(Municipality, _premises, Slot);
+
+        Should.Throw<Exception>(() => service.PayForBooking(booking.Id, _premises));
+        _paymentGateway.CallCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public void GivenUnknownBooking_WhenPayingForBooking_ShouldThrow()
+    {
+        Should.Throw<Exception>(() => CreateService().PayForBooking(Id.Generate(), _premises));
     }
 }
