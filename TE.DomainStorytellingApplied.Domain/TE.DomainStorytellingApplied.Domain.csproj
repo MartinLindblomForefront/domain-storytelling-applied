@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="TE.DomainStorytellingApplied.Domain.Tests" />
+  </ItemGroup>
+
 </Project>
