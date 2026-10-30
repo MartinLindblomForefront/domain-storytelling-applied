@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="docs/ExampleBookingCommandHandler.md" />
+    <File Path="docs/ExampleSendConfirmationEmailHandler.md" />
+  </Folder>
   <Project Path="TE.DomainStorytellingApplied.Domain.Tests/TE.DomainStorytellingApplied.Domain.Tests.csproj" />
   <Project Path="TE.DomainStorytellingApplied.Domain/TE.DomainStorytellingApplied.Domain.csproj" />
 </Solution>
